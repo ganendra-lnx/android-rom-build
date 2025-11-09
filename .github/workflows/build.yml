@@ -1,0 +1,46 @@
+name: Build LineageOS ROM
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Set up environment
+        run: |
+          sudo apt update
+          sudo apt install git repo openjdk-11-jdk python3 -y
+
+      - name: Initialize LineageOS source
+        run: |
+          mkdir lineage
+          cd lineage
+          repo init -u https://github.com/LineageOS/android.git -b lineage-20.0
+          repo sync -c -j4
+
+      - name: Start build
+        run: |
+          cd lineage
+          source build/envsetup.sh
+          lunch RMX1941-userdebug
+          make bacon -j$(nproc)
+
+      - name: GanendraStecuu
+        run: |
+          echo "Build by @ganendra-lnx" > lineage/out/target/product/credit.txt
+
+      - name: Rename output with credit
+        run: |
+          cd lineage/out/target/product/
+          zipfile=$(find . -name "*.zip" | head -n 1)
+          mv "$zipfile" "ROM-by-ganendra-lnx.zip"
+
+      - name: Upload ROM
+        uses: softprops/action-gh-release@v1
+        with:
+          files: lineage/out/target/product/ROM-by-ganendra-lnx.zip
+
